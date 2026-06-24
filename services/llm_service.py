@@ -12,26 +12,43 @@ llm = ChatGroq(
     model=os.getenv("MODEL_NAME")
 )
 
-
 def classify_document(text):
 
+    sample_text = text[:5000]
+
     prompt = f"""
-Classify the following document into one category:
+You are a document classifier.
 
-- Invoice
-- Resume
-- Financial Statement
-- Other
+Classify the document into EXACTLY one category:
 
-Return only the category name.
+Resume
+Invoice
+Financial Statement
+Marksheet
+Aadhaar
+Other
+
+Rules:
+
+- Educational scorecards should be Marksheet.
+- CBSE/ICSE scorecards are Marksheet.
+- Exam result sheets are Marksheet.
+- Student report cards are Marksheet.
+- CVs and resumes are Resume.
+- Bills are Invoice.
+- Bank statements are Financial Statement.
+
+Return ONLY the category name.
 
 Document:
-{text}
+
+{sample_text}
 """
 
     response = llm.invoke(prompt)
 
     return response.content.strip()
+
 
 
 def extract_entities(text):
@@ -74,5 +91,43 @@ Document:
 """
 
     response = llm.invoke(prompt)
+
+    return response.content.strip()
+
+
+def answer_question(
+    question,
+    retrieved_docs
+):
+
+    context = "\n".join(
+        retrieved_docs
+    )
+
+    prompt = f"""
+You are a document question answering assistant.
+
+STRICT RULES:
+
+1. Answer ONLY using information present in the provided context.
+2. Never guess.
+3. Never infer missing information.
+4. Never use external knowledge.
+5. If the answer is not explicitly present in the context, respond exactly:
+
+I could not find that information in the document.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+
+    response = llm.invoke(
+        prompt
+    )
 
     return response.content.strip()
